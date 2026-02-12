@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 10000
+      leak-detection-threshold: 2000
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Seoul
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jwt:
+    secret: ${JWT_SECRET}
+
+#aws:
+#  s3:
+#    accessKey: ${AWS_ACCESS_KEY_ID}
+#    secretKey: ${AWS_SECRET_ACCESS_KEY}
+#    bucketName: ${AWS_S3_BUCKET_NAME}
+#    region: ${AWS_REGION}
+
+kakao:
+  client:
+    id: ${KAKAO_ID}
+    secret: ${KAKAO_SECRET}
+  redirect:
+    url: ${KAKAO_REDIRECT_URL}
