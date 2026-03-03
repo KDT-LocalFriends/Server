@@ -178,7 +178,11 @@ public class ProductService {
                 .exchangedAt(LocalDateTime.now())
                 .build();
 
-        exchangeRepository.save(exchange);
+        try {
+            exchangeRepository.save(exchange);
+        } catch (OptimisticLockingFailureException e) {
+            throw new RuntimeException("상품 교환 중 충돌이 발생했습니다. 다시 시도해주세요.");
+        }
 
         return ExchangeResponseDto.builder()
                 .userId(userId)
