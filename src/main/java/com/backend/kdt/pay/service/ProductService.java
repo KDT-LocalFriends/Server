@@ -53,14 +53,16 @@ public class ProductService {
      */
     @Transactional
     public void exchangeProduct(Long userId, Long productId, int quantity) {
-        User user = userRepository.findById(userId)
+
+        // 기존: findById() → 비관적 락 조회로 교체
+        User user = userRepository.findByIdWithLock(userId)
                 .orElseThrow(() -> new EntityNotFoundException("유저 없음"));
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new EntityNotFoundException("상품 없음"));
 
         if (product.getTransactionType() == TransactionType.DONATION) {
-            throw new IllegalArgumentException("기부 상품은 구매할 수 없습니다. 기부 API를 이용해주세요.");
+            throw new IllegalArgumentException("기부 상품은 구매할 수 없습니다.");
         }
 
         int totalCost = product.getPointCost() * quantity;
@@ -73,15 +75,13 @@ public class ProductService {
             throw new IllegalArgumentException("상품 재고 부족");
         }
 
-        // 포인트 차감 & 재고 감소
+        // 포인트 차감 & 재고 감소 (락이 걸려있어 동시성 안전)
         user.setPoint(user.getPoint() - totalCost);
         product.setStock(product.getStock() - quantity);
 
-        // 구매 시 딸기 헤어핀 지급 (STRAWBERRY_HAIRPIN)
         user.setStrawberryHairpinCount(user.getStrawberryHairpinCount() + PURCHASE_COSMETIC_REWARD);
         user.setCosmeticCount(user.getCosmeticCount() + PURCHASE_COSMETIC_REWARD);
 
-        // PURCHASE 타입으로 자동 설정
         ProductExchange exchange = ProductExchange.builder()
                 .user(user)
                 .product(product)
@@ -91,11 +91,9 @@ public class ProductService {
                 .exchangedAt(LocalDateTime.now())
                 .build();
 
-        try {
-            exchangeRepository.save(exchange);
-        } catch (OptimisticLockingFailureException e) {
-            throw new RuntimeException("상품 교환 중 충돌이 발생했습니다. 다시 시도해주세요.");
-        }
+        // OptimisticLockingFailureException catch 블록 제거
+        // 비관적 락은 충돌 자체를 막으므로 불필요
+        exchangeRepository.save(exchange);
     }
 
     /**
@@ -103,10 +101,10 @@ public class ProductService {
      */
     @Transactional
     public void donateProduct(Long userId, Long productId, int donationAmount) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithLock(userId)
                 .orElseThrow(() -> new EntityNotFoundException("유저 없음"));
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new EntityNotFoundException("상품 없음"));
 
         if (product.getTransactionType() != TransactionType.DONATION) {
@@ -143,10 +141,10 @@ public class ProductService {
      */
     @Transactional
     public ExchangeResponseDto exchangeProductWithResponse(Long userId, Long productId, int quantity) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithLock(userId)
                 .orElseThrow(() -> new EntityNotFoundException("유저 없음"));
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new EntityNotFoundException("상품 없음"));
 
         if (product.getTransactionType() == TransactionType.DONATION) {
