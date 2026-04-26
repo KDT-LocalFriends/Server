@@ -35,9 +35,6 @@ public class Product {
     @Column(nullable = false)
     private TransactionType transactionType;
 
-    @Version
-    private Long version;
-
     @Column(nullable = false)
     private int pointCost;
 
